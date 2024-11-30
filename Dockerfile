@@ -17,9 +17,8 @@ RUN apt-get update \
 # Copy requirements file
 COPY requirements.txt .
 
-# Install numpy first, then other dependencies
-RUN pip install --no-cache-dir numpy==2.1.3 \
-    && pip install --no-cache-dir -r requirements.txt
+# Install dependencies
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY ./app ./app

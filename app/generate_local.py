@@ -6,7 +6,6 @@ import torch
 import gzip
 import pickle
 import torch.quantization
-import numpy as np
 
 def load_model():
     # Load the saved model and tokenizer

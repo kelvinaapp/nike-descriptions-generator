@@ -1,14 +1,12 @@
 import pickle
 import os
 import logging
-from typing import Optional
 from google.cloud import storage
 import tempfile
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
 import gzip
 import torch
 import torch.quantization
-import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
