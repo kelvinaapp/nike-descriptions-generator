@@ -1,7 +1,6 @@
 import pickle
 import os
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, TextDataset, DataCollatorForLanguageModeling, Trainer, TrainingArguments
-from pathlib import Path
 import torch
 import gzip
 import pickle
