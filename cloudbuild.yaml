@@ -8,19 +8,19 @@ steps:
     args: ['push', 'gcr.io/iykra-437909/nike-descriptions-generator:latest']
     
   # Deploy container image to Cloud Run
-  # - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-  #   entrypoint: gcloud
-  #   args:
-  #     - 'run'
-  #     - 'deploy'
-  #     - 'nike-descriptions-generator-service'
-  #     - '--image'
-  #     - 'gcr.io/iykra-437909/nike-descriptions-generator'
-  #     - '--region'
-  #     - 'asia-southeast2'
-  #     - '--platform'
-  #     - 'managed'
-  #     - '--allow-unauthenticated'
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'nike-descriptions-generator-service'
+      - '--image'
+      - 'gcr.io/iykra-437909/nike-descriptions-generator'
+      - '--region'
+      - 'asia-southeast2'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
 
 images:
   - 'gcr.io/iykra-437909/nike-descriptions-generator:latest'
