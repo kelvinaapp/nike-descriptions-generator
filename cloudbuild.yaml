@@ -17,7 +17,7 @@ steps:
       - '--image'
       - 'gcr.io/iykra-437909/nike-descriptions-generator'
       - '--region'
-      - 'asia-southeast2'
+      - 'asia-southeast1'
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
