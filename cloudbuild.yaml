@@ -23,7 +23,7 @@ steps:
   #     - '--allow-unauthenticated'
 
 images:
-  - 'gcr.io/iykra-437909/nike-description-generators:latest'
+  - 'gcr.io/iykra-437909/nike-descriptions-generator:latest'
 
 options:
   logging: CLOUD_LOGGING_ONLY
