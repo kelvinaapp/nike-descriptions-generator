@@ -2,15 +2,42 @@ import pickle
 import os
 from transformers import GPT2Tokenizer, GPT2LMHeadModel, TextDataset, DataCollatorForLanguageModeling, Trainer, TrainingArguments
 from pathlib import Path
+import torch
+import gzip
+import pickle
+import torch.quantization
+import numpy as np
 
 def load_model():
     # Load the saved model and tokenizer
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    model_path = os.path.join(current_dir, 'model/nike_product_generator_cpu.pkl')
-    with open(model_path, 'rb') as f:
-        model_dict = pickle.load(f)
+    model_path = os.path.join(current_dir, 'model/nike_product_generator_quantization.pkl')
+    
+    # Load and decompress the state dict
+    with gzip.open(model_path, 'rb') as f:
+        buffer = f.read()
+    quantized_dict = pickle.loads(buffer)
 
-    return model_dict
+    # Reconstruct the state dict
+    state_dict = {}
+    for key, tensor_data in quantized_dict.items():
+        if 'min' in tensor_data:  # This was a quantized float tensor
+            # Dequantize
+            quantized = torch.from_numpy(tensor_data['data'])
+            qscale = (tensor_data['max'] - tensor_data['min']) / 255.0
+            tensor = quantized.float() * qscale + tensor_data['min']
+            tensor = tensor.reshape(tensor_data['shape'])
+        else:
+            # Reconstruct non-quantized tensor
+            tensor = torch.from_numpy(tensor_data['data'])
+            if tensor_data['shape']:
+                tensor = tensor.reshape(tensor_data['shape'])
+        
+        state_dict[key] = tensor
+
+    # Load the state dict into the model
+
+    return state_dict
 
 
 def generate_description(prompt, max_length=150, num_return_sequences=1):
@@ -26,13 +53,13 @@ def generate_description(prompt, max_length=150, num_return_sequences=1):
         list: List of generated product descriptions
     """
     # Load the model dictionary
-    model_dict = load_model()
+    state_dict = load_model()
     
     # Initialize model and tokenizer
     model = GPT2LMHeadModel.from_pretrained('gpt2')
-    model.load_state_dict(model_dict['model'])
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     
-    tokenizer = model_dict['tokenizer']
+    model.load_state_dict(state_dict)
 
     # Configure tokenizer
     if tokenizer.pad_token is None:

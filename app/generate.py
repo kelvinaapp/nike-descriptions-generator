@@ -5,6 +5,10 @@ from typing import Optional
 from google.cloud import storage
 import tempfile
 from transformers import GPT2Tokenizer, GPT2LMHeadModel
+import gzip
+import torch
+import torch.quantization
+import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -12,14 +16,14 @@ logger = logging.getLogger(__name__)
 
 # Define the GCS bucket and model info
 BUCKET_NAME = 'pre-trained-model-iykra'
-MODEL_BLOB_NAME = 'nike_product_generator_cpu.pkl'
+MODEL_BLOB_NAME = 'nike_product_generator_quantization.pkl'
 
 def load_model():
     """
-    Load the pre-trained model from Google Cloud Storage bucket.
+    Load the pre-trained quantized model from Google Cloud Storage bucket.
     
     Returns:
-        dict: Dictionary containing the model state dict and tokenizer
+        dict: Dictionary containing the model state dict
     """
     try:
         # Create a temporary file to store the downloaded model
@@ -32,15 +36,33 @@ def load_model():
             logger.info(f"Downloading model from GCS bucket: {BUCKET_NAME}")
             blob.download_to_filename(temp_file.name)
             
-            # Load the model dictionary from the temporary file
-            with open(temp_file.name, 'rb') as f:
-                model_dict = pickle.load(f)
+            # Load and decompress the quantized model
+            with gzip.open(temp_file.name, 'rb') as f:
+                buffer = f.read()
+            quantized_dict = pickle.loads(buffer)
             
         # Clean up the temporary file
         os.unlink(temp_file.name)
         
-        logger.info("Model loaded successfully from GCS")
-        return model_dict
+        # Reconstruct the state dict
+        state_dict = {}
+        for key, tensor_data in quantized_dict.items():
+            if 'min' in tensor_data:  # This was a quantized float tensor
+                # Dequantize
+                quantized = torch.from_numpy(tensor_data['data'])
+                qscale = (tensor_data['max'] - tensor_data['min']) / 255.0
+                tensor = quantized.float() * qscale + tensor_data['min']
+                tensor = tensor.reshape(tensor_data['shape'])
+            else:
+                # Reconstruct non-quantized tensor
+                tensor = torch.from_numpy(tensor_data['data'])
+                if tensor_data['shape']:
+                    tensor = tensor.reshape(tensor_data['shape'])
+            
+            state_dict[key] = tensor
+        
+        logger.info("Model loaded and dequantized successfully from GCS")
+        return state_dict
     except Exception as e:
         logger.error(f"Error loading model: {str(e)}")
         raise
@@ -58,13 +80,13 @@ def generate_description(prompt, max_length=150, num_return_sequences=1):
         list: List of generated product descriptions
     """
     # Load the model dictionary
-    model_dict = load_model()
+    state_dict = load_model()
     
     # Initialize model and tokenizer
     model = GPT2LMHeadModel.from_pretrained('gpt2')
-    model.load_state_dict(model_dict['model'])
+    tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
     
-    tokenizer = model_dict['tokenizer']
+    model.load_state_dict(state_dict)
 
     # Configure tokenizer
     if tokenizer.pad_token is None:
@@ -105,5 +127,5 @@ def generate_description(prompt, max_length=150, num_return_sequences=1):
         tokenizer.decode(output, skip_special_tokens=True, clean_up_tokenization_spaces=True)
         for output in outputs
     ]
-
+    
     return generated_texts
