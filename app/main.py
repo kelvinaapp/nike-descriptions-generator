@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from .generate import generate_description
+# from .generate_local import generate_description
 
 app = FastAPI(
     title="Nike Product Description Generator",

@@ -1,49 +1,17 @@
 import pickle
 import os
-import logging
-from typing import Optional
-from google.cloud import storage
-import tempfile
-from transformers import GPT2Tokenizer, GPT2LMHeadModel
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# Define the GCS bucket and model info
-BUCKET_NAME = 'pre-trained-model-iykra'
-MODEL_BLOB_NAME = 'nike_product_generator_cpu.pkl'
+from transformers import GPT2Tokenizer, GPT2LMHeadModel, TextDataset, DataCollatorForLanguageModeling, Trainer, TrainingArguments
+from pathlib import Path
 
 def load_model():
-    """
-    Load the pre-trained model from Google Cloud Storage bucket.
-    
-    Returns:
-        dict: Dictionary containing the model state dict and tokenizer
-    """
-    try:
-        # Create a temporary file to store the downloaded model
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            # Initialize GCS client and download the model
-            storage_client = storage.Client()
-            bucket = storage_client.bucket(BUCKET_NAME)
-            blob = bucket.blob(MODEL_BLOB_NAME)
-            
-            logger.info(f"Downloading model from GCS bucket: {BUCKET_NAME}")
-            blob.download_to_filename(temp_file.name)
-            
-            # Load the model dictionary from the temporary file
-            with open(temp_file.name, 'rb') as f:
-                model_dict = pickle.load(f)
-            
-        # Clean up the temporary file
-        os.unlink(temp_file.name)
-        
-        logger.info("Model loaded successfully from GCS")
-        return model_dict
-    except Exception as e:
-        logger.error(f"Error loading model: {str(e)}")
-        raise
+    # Load the saved model and tokenizer
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    model_path = os.path.join(current_dir, 'model/nike_product_generator_cpu.pkl')
+    with open(model_path, 'rb') as f:
+        model_dict = pickle.load(f)
+
+    return model_dict
+
 
 def generate_description(prompt, max_length=150, num_return_sequences=1):
     """
