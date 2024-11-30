@@ -3,7 +3,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/iykra-437909/nike-descriptions-generator:latest', '.']
 
-  # Push the container image to Container Registry
+  # Push the container image to Container Registryy
   - name: 'gcr.io/cloud-builders/docker'
     args: ['push', 'gcr.io/iykra-437909/nike-descriptions-generator:latest']
     
